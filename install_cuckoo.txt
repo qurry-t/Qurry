@@ -1,0 +1,83 @@
+git config --global http.proxy http://127.0.0.1:1080
+git config --global https.proxy https://127.0.0.1:1080
+
+
+set http_proxy=socks5://127.0.0.1:1081
+set https_proxy=socks5://127.0.0.1:1081
+
+sudo apt-get install gcc g++ git vim net-tools
+sudo apt-get install python python-pip python-dev libffi-dev 
+sudo pip install --upgrade pip
+sudo apt-get install python-virtualenv python-setuptools
+sudo apt-get install libjpeg-dev zlib1g-dev swig
+sudo apt-get install mongodb
+sudo apt-get install postgresql libpq-dev
+# 去官网下载ubuntu18.0.4版本的virtualbox，应该是7.0版本的
+sudo dpkg -i virtualbox-7.0_7.0.4-154605_Ubuntu_bionic_amd64.deb # 应该会报依赖问题的错
+sudo apt install -f # 修复依赖
+# 打开virtualbox的时候说连接不上use，要把当前用户添加到vboxusers用户组，到时候再说
+sudo apt-get install tcpdump apparmor-utils
+sudo aa-disable /usr/sbin/tcpdump  # 如果文件不存在，sudo setcap cap_net_raw,cap_net_admin=eip /usr/sbin/tcpdump，重启
+sudo apt-get install libssl-dev libpcre3 libpcre3-dev gcc-multilib
+sudo pip install m2crypto
+sudo apt install libguac-client-rdp0 libguac-client-vnc0 libguac-client-ssh0 guacd
+sudo pip install -U pip setuptools
+sudo pip install -U cuckoo
+cuckoo
+
+
+# cuckoo的工作目录在运行cuckoo命令时就初始化好了，在 home/.cuckoo/conf 配置文件夹中：
+cuckoo.conf 是通用设置和分析选项
+- [cuckoo] 的 version_check 改为 no
+- [resultserver] 的 ip 和 port 是服务端用来接收客户端的设置，客户端需要能够连接ip和port
+auxiliary.conf 是辅助模块的设置
+virtualbox.conf 是与虚拟机相关的设置，里面的标签对应虚拟机的名字
+memory.conf 是 volatility 的设置
+processing.conf 是处理模块相关的设置
+reporting.conf 是启动或禁用报告格式
+- 将 mongodb 改为 yes （暂时不知道有什么用）
+# 设置最大文件数
+sudo vim /etc/security/limits.conf
+# 内容：
+* hard nofile 500000
+* soft nofile 500000
+root hard nofile 500000
+root soft nofile 500000
+
+sudo iptables -t nat -A POSTROUTING -o ens33 -s 192.168.56.0/24 -j MASQUERADE
+sudo iptables -P FORWARD DROP
+sudo iptables -A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -A FORWARD -s 192.168.56.0/24 -j ACCEPT
+sudo iptables -A FORWARD -s 192.168.56.0/24 -d 192.168.56.0/24 -j ACCEPT
+sudo iptables -A FORWARD -j LOG
+# 如果虚拟机上不了网，可能每次要设置一下流量转发
+echo 1 | sudo tee -a /proc/sys/net/ipv4/ip_forward
+sudo sysctl -w net.ipv4.ip_forward=1
+sudo apt-get install iptables-persistent
+sudo sysctl -p /etc/sysctl.conf
+sudo netfilter-persistent save
+
+# 在virtualbox中创建一个新的网络，默认就是vboxnet0，ip 192.168.56.1（和cuckoo服务端的ip相同）
+创建虚拟机：
+- 安装virtualbox增强工具用来传文件，关闭虚拟机，在设置中打开双向交互
+- 安装python2，将python和python/scripts的路径添加到系统路径中
+- 安装pillow，用来截屏：pip install pillow
+- 关闭UAC，firewall，
+- 将./cuckoo/agent 文件夹中的 agent.py 放进win7/10的启动目录，修改后缀为 .pyw，然后启动。在进程中看到 pythonw.exe 说明启动成功
+- 保持开机，打快照：VBoxManage snapshot "VMname" take  "SnapshotName"  或手动
+
+# 在cuckoo中设置虚拟机信息
+cuckoo machine --delete cuckoo1 && cuckoo machine --add cuckoo1 192.168.56.101 --platform windows --snapshot snap1
+或者手动在 virtualbox.conf 文件中设置，label 是 virtualbox 中的名字，方括号的是cuckoo的命名
+
+------------------------------------------------
+# 使用
+
+
+
+
+
+
+
+
+
